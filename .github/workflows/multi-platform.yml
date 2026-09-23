@@ -36,11 +36,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Patch bindings (fix xml_node dtor for clang 21)
+        shell: bash
+        run: |
+          # Fix for pugi::xml_node destructor - remove inline dtor that breaks clang 21 and causes linker issues
+          BRO_FILE="bindings-repo/bindings/2.2081/Cocos2d.bro"
+          INLINE_FILE="bindings-repo/bindings/2.2081/inline/xml_node.cpp"
+          if [ -f "$BRO_FILE" ]; then
+            echo "Patching $BRO_FILE"
+            # Remove the ~xml_node() line added in e5be4fa
+            python3 -c "
+          import pathlib
+          p = pathlib.Path('$BRO_FILE')
+          t = p.read_text()
+          t = t.replace('    ~xml_node() = inline;\n', '')
+          p.write_text(t)
+          print('Patched bro')
+          "
+            cat "$BRO_FILE" | grep -n "xml_node" | head
+          fi
+          if [ -f "$INLINE_FILE" ]; then
+            echo "Patching $INLINE_FILE - making it empty to avoid compile error"
+            echo '// patched - destructor removed to fix clang 21 build' > "$INLINE_FILE"
+            echo '// original destructor disabled' >> "$INLINE_FILE"
+            cat "$INLINE_FILE"
+          fi
+
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
           bindings: geode-sdk/bindings
-          bindings-ref: ea041d193ff35fc7777c6bd91373126982e5d755
+          bindings-ref: main
           combine: true
           target: ${{ matrix.config.target }}
 
