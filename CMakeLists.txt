@@ -47,8 +47,7 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 setup_geode_mod(${PROJECT_NAME})
 
 # Fix for Windows linker: pugi::xml_node destructor is referenced but not defined after patch
-# Use /FORCE:UNRESOLVED to allow build (destructor is only for DestructorLock cleanup, safe to ignore)
-# Alternatively provide a dummy definition via source file
+# Provide dummy via pugi_fix.cpp; also allow unresolved as fallback
 if(WIN32)
-    target_link_options(${PROJECT_NAME} PRIVATE "/FORCE:UNRESOLVED")
+    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:/FORCE:UNRESOLVED")
 endif()
